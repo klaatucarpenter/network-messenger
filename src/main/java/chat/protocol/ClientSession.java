@@ -12,7 +12,7 @@ public class ClientSession {
         if (line == null) return null;
 
         if (nick == null) {
-            if (!line.startsWith(Protocol.HANDSHAKE)) return Protocol.ERROR_INVALID_HANDSHAKE;
+            if (!line.startsWith(Protocol.HANDSHAKE)) return Protocol.ERR_NOT_LOGGED_IN;
             String trimmed = line.trim();
             String candidate = line.substring(Protocol.HANDSHAKE.length()).trim();
             if (candidate.isEmpty() || candidate.contains(" ") || candidate.length() > Protocol.MAX_NICK_LENGTH) {
@@ -24,6 +24,12 @@ public class ClientSession {
             } else {
                 return Protocol.ERR_NICK_TAKEN;
             }
+        }
+
+        if (line.startsWith(Protocol.MSG)) {
+            String text = line.substring(Protocol.MSG.length()).trim();
+            backend.broadcast(nick, text);
+            return null;
         }
 
         return Protocol.ERROR_UNKNOWN;

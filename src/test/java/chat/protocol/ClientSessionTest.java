@@ -65,4 +65,26 @@ class ClientSessionTest {
         verify(backend).reserveNick("alice");
     }
 
+    @Test
+    void msg_broadcastsWhenLoggedIn() {
+        Backend backend = mock(Backend.class);
+        when(backend.reserveNick("alice")).thenReturn(true);
+        ClientSession s = new ClientSession(backend);
+
+        assertEquals(Protocol.WELCOME, s.process(Protocol.HANDSHAKE + "alice"));
+
+        String resp = s.process(Protocol.MSG + "foo bar baz");
+        assertNull(resp);
+        verify(backend).broadcast("alice", "foo bar baz");
+    }
+
+    @Test
+    void msg_beforeLoginIsRejected() {
+        Backend backend = mock(Backend.class);
+        ClientSession s = new ClientSession(backend);
+
+        String resp = s.process(Protocol.MSG + "foo");
+        assertEquals(Protocol.ERR_NOT_LOGGED_IN, resp);
+    }
+
 }
