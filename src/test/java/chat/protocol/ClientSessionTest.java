@@ -14,11 +14,55 @@ class ClientSessionTest {
         when(backend.reserveNick("alice")).thenReturn(true);
 
         ClientSession s = new ClientSession(backend);
-        String resp = s.process("HELLO alice");
+        String resp = s.process(Protocol.HANDSHAKE + "alice");
 
-        assertEquals("WELCOME", resp);
+        assertEquals(Protocol.WELCOME, resp);
         assertEquals("alice", s.nick());
         verify(backend).reserveNick("alice");
         verifyNoMoreInteractions(backend);
     }
+
+    @Test
+    void hello_rejectsEmptyNick() {
+        Backend backend = mock(Backend.class);
+        ClientSession s = new ClientSession(backend);
+
+        String resp = s.process(Protocol.HANDSHAKE);
+        assertEquals(Protocol.ERR_INVALID_NICK, resp);
+        verifyNoInteractions(backend);
+    }
+
+    @Test
+    void hello_rejectsNickWithSpaces() {
+        Backend backend = mock(Backend.class);
+        ClientSession s = new ClientSession(backend);
+
+        String resp = s.process(Protocol.HANDSHAKE + "alice bob");
+        assertEquals(Protocol.ERR_INVALID_NICK, resp);
+        verifyNoInteractions(backend);
+    }
+
+    @Test
+    void hello_rejectsTooLongNick() {
+        Backend backend = mock(Backend.class);
+        ClientSession s = new ClientSession(backend);
+        String longNick = "a".repeat(Protocol.MAX_NICK_LENGTH + 1);
+
+        String resp = s.process(Protocol.HANDSHAKE + longNick);
+        assertEquals(Protocol.ERR_INVALID_NICK, resp);
+        verifyNoInteractions(backend);
+    }
+
+    @Test
+    void hello_rejectsTakenNick() {
+        Backend backend = mock(Backend.class);
+        when(backend.reserveNick("alice")).thenReturn(false);
+
+        ClientSession s = new ClientSession(backend);
+        String resp = s.process(Protocol.HANDSHAKE + "alice");
+
+        assertEquals(Protocol.ERR_NICK_TAKEN, resp);
+        verify(backend).reserveNick("alice");
+    }
+
 }

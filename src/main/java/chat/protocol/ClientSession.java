@@ -1,8 +1,6 @@
 package chat.protocol;
 
 public class ClientSession {
-    private static final String HELLO_PREFIX = "HELLO ";
-    private static final int MAX_NICK_LENGTH = 20;
     private final Backend backend;
     private String nick;
 
@@ -11,25 +9,27 @@ public class ClientSession {
     }
 
     public String process(String line) {
-        if (line == null) return "ERROR";
+        if (line == null) return null;
 
         if (nick == null) {
-            if (!line.startsWith(HELLO_PREFIX)) return "ERROR missing HELLO";
+            if (!line.startsWith(Protocol.HANDSHAKE)) return Protocol.ERROR_INVALID_HANDSHAKE;
             String trimmed = line.trim();
-            String candidate = line.substring(HELLO_PREFIX.length()).trim();
-            if (candidate.isEmpty() || candidate.contains(" ") || candidate.length() > MAX_NICK_LENGTH) {
-                return "ERROR Bad nickname";
+            String candidate = line.substring(Protocol.HANDSHAKE.length()).trim();
+            if (candidate.isEmpty() || candidate.contains(" ") || candidate.length() > Protocol.MAX_NICK_LENGTH) {
+                return Protocol.ERR_INVALID_NICK;
             }
             if (backend.reserveNick(candidate)) {
                 nick = candidate;
-                return "WELCOME";
+                return Protocol.WELCOME;
             } else {
-                return "ERROR Nickname is already taken";
+                return Protocol.ERR_NICK_TAKEN;
             }
         }
 
-    return "ERROR Unknown command";
+        return Protocol.ERROR_UNKNOWN;
     }
 
-    public String nick() { return nick; }
+    public String nick() {
+        return nick;
+    }
 }
