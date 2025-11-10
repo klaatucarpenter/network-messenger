@@ -87,4 +87,55 @@ class ClientSessionTest {
         assertEquals(Protocol.ERR_NOT_LOGGED_IN, resp);
     }
 
+    @Test
+    void priv_beforeLoginIsRejected() {
+        Backend backend = mock(Backend.class);
+        ClientSession s = new ClientSession(backend);
+
+        String resp = s.process(Protocol.PRIV + "bob hi");
+        assertEquals(Protocol.ERR_NOT_LOGGED_IN, resp);
+    }
+
+    @Test
+    void priv_sendsPrivateMessageWhenLoggedIn() {
+        Backend backend = mock(Backend.class);
+        when(backend.reserveNick("alice")).thenReturn(true);
+        when(backend.sendPrivate("alice", "bob", "hi")).thenReturn(true);
+
+        ClientSession s = new ClientSession(backend);
+        s.process(Protocol.HANDSHAKE + "alice");
+
+        String resp = s.process(Protocol.PRIV + "bob hi");
+        assertNull(resp);
+        verify(backend).sendPrivate("alice", "bob", "hi");
+        verify(backend).reserveNick("alice");
+    }
+
+    @Test
+    void priv_reportsUnknownUser() {
+        Backend backend = mock(Backend.class);
+        when(backend.reserveNick("alice")).thenReturn(true);
+        when(backend.sendPrivate("alice", "bob", "hi")).thenReturn(false);
+
+        ClientSession s = new ClientSession(backend);
+        s.process(Protocol.HANDSHAKE + "alice");
+
+        String resp = s.process(Protocol.PRIV + "bob hi");
+        assertEquals(Protocol.ERR_USER_NOT_FOUND, resp);
+        verify(backend).sendPrivate("alice", "bob", "hi");
+    }
+
+    @Test
+    void priv_reportsInvalidMessage() {
+        Backend backend = mock(Backend.class);
+        when(backend.reserveNick("alice")).thenReturn(true);
+
+        ClientSession s = new ClientSession(backend);
+        s.process(Protocol.HANDSHAKE + "alice");
+
+        String resp = s.process(Protocol.PRIV + "bob ");
+        assertEquals(Protocol.ERR_INVALID_MSG, resp);
+    }
+
+
 }

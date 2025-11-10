@@ -32,6 +32,23 @@ public class ClientSession {
             return null;
         }
 
+        if (line.startsWith(Protocol.PRIV)) {
+            String rest = line.substring(Protocol.PRIV.length()).trim();
+            String[] parts = rest.split(" ", 2);
+            if (parts.length < 2) {
+                return Protocol.ERR_INVALID_MSG;
+            }
+            String target = parts[0].trim();
+            String text = parts[1].trim();
+
+            boolean ok = backend.sendPrivate(nick, target, text);
+            if (ok) {
+                return null;
+            } else {
+                return Protocol.ERR_USER_NOT_FOUND;
+            }
+        }
+
         return Protocol.ERROR_UNKNOWN;
     }
 
