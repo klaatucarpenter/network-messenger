@@ -40,13 +40,16 @@ public class ClientSession {
             }
             String target = parts[0].trim();
             String text = parts[1].trim();
-
             boolean ok = backend.sendPrivate(nick, target, text);
             if (ok) {
                 return null;
             } else {
                 return Protocol.ERR_USER_NOT_FOUND;
             }
+        }
+
+        if (line.startsWith(Protocol.LIST_USERS)) {
+            return Protocol.LIST_USERS + backend.usersCsv();
         }
 
         return Protocol.ERROR_UNKNOWN;

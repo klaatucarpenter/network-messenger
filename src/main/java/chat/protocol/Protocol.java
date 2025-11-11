@@ -11,6 +11,7 @@ public interface Protocol {
     String HANDSHAKE = "HELLO ";
     String MSG = "MSG ";
     String PRIV = "PRIV ";
+    String LIST_USERS = "USERS";
     String WELCOME = "WELCOME";
 
     int MAX_NICK_LENGTH = 20;

@@ -137,5 +137,28 @@ class ClientSessionTest {
         assertEquals(Protocol.ERR_INVALID_MSG, resp);
     }
 
+    @Test
+    void users_beforeLoginIsRejected() {
+        Backend backend = mock(Backend.class);
+        ClientSession s = new ClientSession(backend);
+
+        String resp = s.process(Protocol.LIST_USERS);
+        assertEquals(Protocol.ERR_NOT_LOGGED_IN, resp);
+    }
+
+    @Test
+    void users_returnsListWhenLoggedIn() {
+        Backend backend = mock(Backend.class);
+        when(backend.reserveNick("alice")).thenReturn(true);
+        when(backend.usersCsv()).thenReturn("alice,bob,charlie");
+
+        ClientSession s = new ClientSession(backend);
+        s.process(Protocol.HANDSHAKE + "alice");
+
+        String resp = s.process(Protocol.LIST_USERS);
+        assertEquals(Protocol.LIST_USERS + "alice,bob,charlie", resp);
+        verify(backend).usersCsv();
+    }
+
 
 }
