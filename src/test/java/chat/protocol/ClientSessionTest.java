@@ -160,5 +160,17 @@ class ClientSessionTest {
         verify(backend).usersCsv();
     }
 
+    @Test
+    void quit_releasesNick() {
+        Backend backend = mock(Backend.class);
+        when(backend.reserveNick("alice")).thenReturn(true);
+
+        ClientSession s = new ClientSession(backend);
+        s.process(Protocol.HANDSHAKE + "alice");
+
+        String resp = s.process(Protocol.QUIT);
+        assertNull(resp);
+        verify(backend).releaseNick("alice");
+    }
 
 }

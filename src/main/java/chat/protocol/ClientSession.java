@@ -52,6 +52,12 @@ public class ClientSession {
             return Protocol.LIST_USERS + backend.usersCsv();
         }
 
+        if (line.startsWith(Protocol.QUIT)) {
+            backend.releaseNick(nick);
+            nick = null;
+            return null;
+        }
+
         return Protocol.ERROR_UNKNOWN;
     }
 
