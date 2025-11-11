@@ -8,9 +8,11 @@ public interface Protocol {
     String ERROR_UNKNOWN = "ERROR Unknown command";
     String ERR_USER_NOT_FOUND = "ERROR User not found";
 
+    String FROM = "FROM: ";
     String HANDSHAKE = "HELLO ";
     String MSG = "MSG ";
     String PRIV = "PRIV ";
+    String PRIV_FROM = "PRIV FROM: ";
     String LIST_USERS = "USERS";
     String QUIT = "QUIT";
     String WELCOME = "WELCOME";
