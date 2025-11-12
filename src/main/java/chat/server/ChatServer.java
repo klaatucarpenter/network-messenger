@@ -83,6 +83,11 @@ public class ChatServer {
 
     public static void main(String[] args) throws Exception {
         int port = (args.length > 0) ? Integer.parseInt(args[0]) : 5000;
-        new ChatServer(port).startAsync();
+        ChatServer server = new ChatServer(port);
+        Thread t = server.startAsync();
+        server.awaitReady(5000);
+        System.out.println("Server started on port " + port + ". Press Ctrl+C to stop.");
+        Runtime.getRuntime().addShutdownHook(new Thread(server::stop, "shutdown"));
+        t.join();
     }
 }

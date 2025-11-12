@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("application")
 }
 
 java {
@@ -8,6 +9,10 @@ java {
     }
 }
 
+application {
+    // Default entry point for `./gradlew run`
+    mainClass.set("chat.server.ChatServer")
+}
 
 group = "org.example"
 version = "1.0-SNAPSHOT"
@@ -26,4 +31,12 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.register<JavaExec>("runServer") {
+    group = "application"
+    description = "Runs the chat server"
+    mainClass.set("chat.server.ChatServer")
+    classpath = sourceSets["main"].runtimeClasspath
+    args = listOf("5000")
 }
