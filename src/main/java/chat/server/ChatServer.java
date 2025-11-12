@@ -1,4 +1,4 @@
-package server;
+package chat.server;
 
 import chat.protocol.ClientSession;
 import chat.protocol.Protocol;
@@ -35,7 +35,7 @@ public class ChatServer {
                 ready.countDown();
                 if (running) e.printStackTrace();
             }
-        }, "server");
+        }, "chat/server");
         t.setDaemon(true);
         t.start();
         return t;

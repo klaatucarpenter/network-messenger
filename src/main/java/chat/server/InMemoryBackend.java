@@ -1,4 +1,4 @@
-package server;
+package chat.server;
 
 import chat.protocol.Backend;
 import chat.protocol.Protocol;

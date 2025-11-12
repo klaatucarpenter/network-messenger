@@ -1,4 +1,4 @@
-package server;
+package chat.server;
 
 import chat.protocol.Protocol;
 import org.junit.jupiter.api.Test;

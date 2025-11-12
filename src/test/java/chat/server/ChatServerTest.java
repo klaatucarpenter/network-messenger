@@ -1,4 +1,4 @@
-package server;
+package chat.server;
 
 import chat.protocol.Protocol;
 import org.junit.jupiter.api.AfterEach;
@@ -8,7 +8,6 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.*;
 
