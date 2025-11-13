@@ -40,3 +40,10 @@ tasks.register<JavaExec>("runServer") {
     classpath = sourceSets["main"].runtimeClasspath
     args = listOf("5000")
 }
+
+tasks.register<JavaExec>("runClient") {
+    group = "application"
+    description = "Runs the Swing chat client"
+    mainClass.set("chat.app.ChatApp")
+    classpath = sourceSets["main"].runtimeClasspath
+}

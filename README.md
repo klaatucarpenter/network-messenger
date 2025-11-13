@@ -33,8 +33,14 @@ Or use the convenience task:
 ./gradlew runServer
 ```
 
+Launch the GUI client (Swing desktop app):
+```bash
+./gradlew runClient
+```
+
 Alternatively, from your IDE:
 - Run `chat.server.ChatServer.main` to start the server (optionally pass a port argument, default 5000)
+- Run `chat.app.ChatApp.main` to start the GUI client
 
 Quick sanity checks
 - Confirm it’s listening: `nc -zv localhost 5000`
