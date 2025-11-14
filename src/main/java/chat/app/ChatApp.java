@@ -4,6 +4,8 @@ import chat.protocol.Protocol;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +54,13 @@ public class ChatApp {
         mainSplit.setContinuousLayout(true);
 
         frame.add(mainSplit, BorderLayout.CENTER);
+
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                disconnect();
+            }
+        });
 
         frame.setSize(1200, 800);
         frame.setLocationRelativeTo(null);
