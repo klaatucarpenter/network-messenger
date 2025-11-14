@@ -70,6 +70,7 @@ public class ChatServer {
                     out.println(resp);
                     if (Protocol.WELCOME.equals(resp) && session.nick() != null) {
                         backend.attachWriter(session.nick(), out);
+                        backend.broadcastUsersList();
                     }
                 } else {
                     if (session.nick() != null) {

@@ -15,4 +15,8 @@ public interface Backend {
     * ex. "alice,bob"
     */
     String usersCsv();
+    /**
+     * Broadcast the current users list to all connected clients.
+     */
+    void broadcastUsersList();
 }

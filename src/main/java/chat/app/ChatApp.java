@@ -275,6 +275,14 @@ public class ChatApp {
                     addMessage("[DM from " + from + "] ", msg);
                 }
             }
+        } else if (line.startsWith(Protocol.LIST_USERS)) {
+            String csv = line.substring(Protocol.LIST_USERS.length());
+            usersModel.clear();
+            if (!csv.isEmpty()) {
+                for (String u : csv.split(",")) {
+                    if (!u.isBlank()) usersModel.addElement(u.trim());
+                }
+            }
         } else if (line.startsWith("ERROR")) {
             appendSystemMessage(line);
         } else {

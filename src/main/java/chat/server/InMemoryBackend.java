@@ -22,6 +22,7 @@ public class InMemoryBackend implements Backend {
     @Override
     public void releaseNick(String nick) {
         clients.remove(nick);
+        broadcastUsersList();
     }
 
     public void attachWriter(String nick, PrintWriter out) {
@@ -53,5 +54,14 @@ public class InMemoryBackend implements Backend {
     @Override
     public String usersCsv() {
         return String.join(",", clients.keySet());
+    }
+
+    @Override
+    public void broadcastUsersList() {
+        String line = Protocol.LIST_USERS + usersCsv();
+        clients.values().forEach(s -> {
+            PrintWriter w = s.out;
+            if (w != null) w.println(line);
+        });
     }
 }
