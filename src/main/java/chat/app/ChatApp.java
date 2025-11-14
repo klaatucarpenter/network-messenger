@@ -169,7 +169,7 @@ public class ChatApp {
             String rest = text.substring("dm ".length()).trim();
             int sp = rest.indexOf(' ');
             if (sp <= 0) {
-                appendSystemMessage("Usage: DM <nick> <message>");
+                appendSystemMessage("Usage: DM nick message");
             } else {
                 String to = rest.substring(0, sp);
                 String msg = rest.substring(sp + 1);
