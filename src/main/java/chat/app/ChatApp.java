@@ -14,6 +14,7 @@ public class ChatApp {
         SwingUtilities.invokeLater(() -> new ChatApp().show());
     }
 
+    private Thread listenerThread;
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
@@ -160,7 +161,23 @@ public class ChatApp {
         if (text == null) return;
         text = text.trim();
         if (text.isEmpty()) return;
-        appendSystemMessage("> " + text);
+        if (out == null) {
+            appendSystemMessage("Not connected");
+            return;
+        }
+        if (text.toLowerCase().startsWith("dm ")) {
+            String rest = text.substring("dm ".length()).trim();
+            int sp = rest.indexOf(' ');
+            if (sp <= 0) {
+                appendSystemMessage("Usage: DM <nick> <message>");
+            } else {
+                String to = rest.substring(0, sp);
+                String msg = rest.substring(sp + 1);
+                out.println(Protocol.PRIV + to + " " + msg);
+            }
+        } else {
+            out.println(Protocol.MSG + text);
+        }
         messageField.setText("");
     }
 
@@ -210,12 +227,58 @@ public class ChatApp {
                 headerTitle.setText("Room");
                 headerSubtitle.setText("Logged in as " + nick);
                 appendSystemMessage("Connected as " + nick + ")");
+                startListener();
                 break;
             } else if (Protocol.ERR_NICK_TAKEN.equals(resp) || Protocol.ERR_INVALID_NICK.equals(resp)) {
                 JOptionPane.showMessageDialog(frame, resp, "Login failed", JOptionPane.WARNING_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(frame, "Unexpected response: " + resp, "Login failed", JOptionPane.WARNING_MESSAGE);
             }
+        }
+    }
+
+    private void startListener() {
+        listenerThread = new Thread(() -> {
+            try {
+                String line;
+                while ((line = in.readLine()) != null) {
+                    final String ln = line;
+                    SwingUtilities.invokeLater(() -> handleIncoming(ln));
+                }
+            } catch (IOException ignored) {
+            } finally {
+                SwingUtilities.invokeLater(() -> appendSystemMessage("Disconnected."));
+            }
+        }, "chat/listener");
+        listenerThread.setDaemon(true);
+        listenerThread.start();
+    }
+
+    private void handleIncoming(String line) {
+        if (line.startsWith(Protocol.FROM)) {
+            String rest = line.substring(Protocol.FROM.length());
+            int sp = rest.indexOf(' ');
+            if (sp > 0) {
+                String from = rest.substring(0, sp);
+                String msg = rest.substring(sp + 1);
+                addMessage(from, msg);
+            }
+        } else if (line.startsWith(Protocol.PRIV_FROM)) {
+            String rest = line.substring(Protocol.PRIV_FROM.length());
+            int sp = rest.indexOf(' ');
+            if (sp > 0) {
+                String from = rest.substring(0, sp);
+                String msg = rest.substring(sp + 1);
+                if (nick.equals(from)) {
+                    addMessage("[DM from me] ", msg);
+                } else {
+                    addMessage("[DM from " + from + "] ", msg);
+                }
+            }
+        } else if (line.startsWith("ERROR")) {
+            appendSystemMessage(line);
+        } else {
+            appendSystemMessage("? " + line);
         }
     }
 
