@@ -374,11 +374,7 @@ public class ChatApp {
                     boolean toMe = nick.equals(to);
 
                     if (fromMe && !toMe) {
-                        addMessage(from, "[DM to " + to + "] " + msg, true);
-                    } else if (toMe && !fromMe) {
-                        addMessage(from, "[DM to you] " + msg, true);
-                    } else {
-                        addMessage(from, "[DM " + from + " -> " + to + "] " + msg, true);
+                        addMessage(from, "[to " + to + "] " + msg, true);
                     }
                 }
             }
