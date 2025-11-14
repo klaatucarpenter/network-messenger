@@ -9,8 +9,16 @@ public class ChatApp {
         SwingUtilities.invokeLater(() -> new ChatApp().show());
     }
 
+    private JFrame frame;
+    private DefaultListModel<String> usersModel;
+    private JPanel messagesPanel;
+    private JScrollPane messagesScroll;
+    private JTextField messageField;
+    private JLabel headerTitle;
+    private JLabel headerSubtitle;
+
     private void show() {
-        JFrame frame = new JFrame("Simple Chat");
+        frame = new JFrame("Simple Chat");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
@@ -35,12 +43,8 @@ public class ChatApp {
         searchField.setText("Search");
         panel.add(searchField, BorderLayout.NORTH);
 
-        DefaultListModel<String> model = new DefaultListModel<>();
-        model.addElement("Kunta Kinte");
-        model.addElement("Piętaszek Friday");
-        model.addElement("Rädler Meletepa");
-
-        JList<String> conversationsList = new JList<>(model);
+        usersModel = new DefaultListModel<>();
+        JList<String> conversationsList = new JList<>(usersModel);
         conversationsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         panel.add(new JScrollPane(conversationsList), BorderLayout.CENTER);
@@ -65,13 +69,13 @@ public class ChatApp {
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
 
-        JLabel title = new JLabel("Design chat");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
+        headerTitle = new JLabel("Design chat");
+        headerTitle.setFont(headerTitle.getFont().deriveFont(Font.BOLD, 18f));
 
-        JLabel subtitle = new JLabel("23 members");
+        headerSubtitle = new JLabel("23 members");
 
-        titlePanel.add(title);
-        titlePanel.add(subtitle);
+        titlePanel.add(headerTitle);
+        titlePanel.add(headerSubtitle);
 
         header.add(titlePanel, BorderLayout.WEST);
 
@@ -79,18 +83,12 @@ public class ChatApp {
     }
 
     private JComponent messagesArea() {
-        JPanel messagesPanel = new JPanel();
+        messagesPanel = new JPanel();
         messagesPanel.setLayout(new BoxLayout(messagesPanel, BoxLayout.Y_AXIS));
 
-        messagesPanel.add(messageBubble("Kunta Kinte",
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam sagittis sem et magna lacinia dictum. Donec vehicula molestie mi quis luctus."));
-        messagesPanel.add(Box.createVerticalStrut(8));
-        messagesPanel.add(messageBubble("Rädler Meletepa",
-                "Nunc consequat ultrices rutrum. "));
-
-        JScrollPane scroll = new JScrollPane(messagesPanel);
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
-        return scroll;
+        messagesScroll = new JScrollPane(messagesPanel);
+        messagesScroll.getVerticalScrollBar().setUnitIncrement(16);
+        return messagesScroll;
     }
 
     private JComponent messageBubble(String author, String text) {
@@ -115,13 +113,15 @@ public class ChatApp {
     private JComponent inputArea() {
         JPanel inputPanel = new JPanel(new BorderLayout(8, 8));
 
-        JTextField messageField = new JTextField();
+        messageField = new JTextField();
         messageField.setToolTipText("Your message");
+        messageField.addActionListener(e -> sendCurrentText());
 
         JButton sendButton = new JButton("Send");
 
         JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         rightButtons.add(sendButton);
+        sendButton.addActionListener(e -> sendCurrentText());
 
         inputPanel.add(messageField, BorderLayout.CENTER);
         inputPanel.add(rightButtons, BorderLayout.EAST);
@@ -129,4 +129,27 @@ public class ChatApp {
         return inputPanel;
     }
 
+    private void addMessage(String author, String text) {
+        messagesPanel.add(messageBubble(author, text));
+        messagesPanel.add(Box.createVerticalStrut(8));
+        messagesPanel.revalidate();
+        messagesPanel.repaint();
+        SwingUtilities.invokeLater(() -> {
+            JScrollBar bar = messagesScroll.getVerticalScrollBar();
+            bar.setValue(bar.getMaximum());
+        });
+    }
+
+    private void appendSystemMessage(String text) {
+        addMessage("System", text);
+    }
+
+    private void sendCurrentText() {
+        String text = messageField.getText();
+        if (text == null) return;
+        text = text.trim();
+        if (text.isEmpty()) return;
+        appendSystemMessage("> " + text);
+        messageField.setText("");
+    }
 }
