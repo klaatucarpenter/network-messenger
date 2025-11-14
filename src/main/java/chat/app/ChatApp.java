@@ -34,7 +34,7 @@ public class ChatApp {
         frame.setLayout(new BorderLayout());
 
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                conversationsPanel(),
+                usersListPanel(),
                 chatPanel());
         mainSplit.setResizeWeight(0.28);
         mainSplit.setContinuousLayout(true);
@@ -47,13 +47,9 @@ public class ChatApp {
         SwingUtilities.invokeLater(this::connectAndLogin);
     }
 
-    private JPanel conversationsPanel() {
+    private JPanel usersListPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-
-        JTextField searchField = new JTextField();
-        searchField.setText("Search");
-        panel.add(searchField, BorderLayout.NORTH);
 
         usersModel = new DefaultListModel<>();
         JList<String> conversationsList = new JList<>(usersModel);
@@ -226,7 +222,7 @@ public class ChatApp {
                 this.nick = proposed;
                 headerTitle.setText("Room");
                 headerSubtitle.setText("Logged in as " + nick);
-                appendSystemMessage("Connected as " + nick + ")");
+                appendSystemMessage("Connected as " + nick);
                 startListener();
                 break;
             } else if (Protocol.ERR_NICK_TAKEN.equals(resp) || Protocol.ERR_INVALID_NICK.equals(resp)) {
