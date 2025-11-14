@@ -28,9 +28,21 @@ public class ChatApp {
     private JLabel headerTitle;
     private JLabel headerSubtitle;
 
+    private static final Color BG_APP = new Color(244, 246, 255);
+    private static final Color BG_SIDEBAR = new Color(26, 30, 60);
+    private static final Color BG_CHAT = new Color(255, 255, 255);
+    private static final Color BG_BUBBLE_ME = new Color(111, 97, 255);
+    private static final Color BG_BUBBLE_THEM = new Color(235, 238, 252);
+    private static final Color BG_INPUT = new Color(245, 246, 252);
+
+    private static final Color FG_PRIMARY = new Color(17, 24, 39);
+    private static final Color FG_MUTED = new Color(148, 163, 184);
+    private static final Color FG_ON_PRIMARY = Color.WHITE;
+
     private void show() {
         frame = new JFrame("Simple Chat");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.getContentPane().setBackground(BG_APP);
         frame.setLayout(new BorderLayout());
 
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
@@ -49,40 +61,67 @@ public class ChatApp {
 
     private JPanel usersListPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
-        panel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        panel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 8));
+        panel.setBackground(BG_SIDEBAR);
+
+        JLabel title = new JLabel("Users");
+        title.setForeground(Color.WHITE);
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
+        panel.add(title, BorderLayout.NORTH);
 
         usersModel = new DefaultListModel<>();
         JList<String> conversationsList = new JList<>(usersModel);
         conversationsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        conversationsList.setBackground(BG_SIDEBAR);
+        conversationsList.setForeground(Color.WHITE);
+        conversationsList.setSelectionBackground(new Color(64, 70, 110));
+        conversationsList.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
 
-        panel.add(new JScrollPane(conversationsList), BorderLayout.CENTER);
+        JScrollPane scroll = new JScrollPane(conversationsList);
+        scroll.setBorder(null);
+        scroll.getViewport().setBackground(BG_SIDEBAR);
+
+        panel.add(scroll, BorderLayout.CENTER);
 
         return panel;
     }
 
     private JPanel chatPanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
-        panel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        panel.setBorder(BorderFactory.createEmptyBorder(16, 8, 16, 16));
+        panel.setBackground(BG_APP);
 
-        panel.add(chatHeader(), BorderLayout.NORTH);
-        panel.add(messagesArea(), BorderLayout.CENTER);
-        panel.add(inputArea(), BorderLayout.SOUTH);
+        JPanel card = new JPanel(new BorderLayout(8, 8));
+        card.setBackground(BG_CHAT);
+        card.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+
+        card.add(chatHeader(), BorderLayout.NORTH);
+        card.add(messagesArea(), BorderLayout.CENTER);
+        card.add(inputArea(), BorderLayout.SOUTH);
+
+        panel.add(card, BorderLayout.CENTER);
 
         return panel;
     }
 
     private JComponent chatHeader() {
         JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
 
         JPanel titlePanel = new JPanel();
+        titlePanel.setOpaque(false);
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
 
         headerTitle = new JLabel("Design chat");
-        headerTitle.setFont(headerTitle.getFont().deriveFont(Font.BOLD, 18f));
+        headerTitle.setFont(headerTitle.getFont().deriveFont(Font.BOLD, 20f));
+        headerTitle.setForeground(FG_PRIMARY);
 
         headerSubtitle = new JLabel("23 members");
+        headerSubtitle.setFont(headerSubtitle.getFont().deriveFont(13f));
+        headerSubtitle.setForeground(FG_MUTED);
 
         titlePanel.add(headerTitle);
+        titlePanel.add(Box.createVerticalStrut(2));
         titlePanel.add(headerSubtitle);
 
         header.add(titlePanel, BorderLayout.WEST);
@@ -93,52 +132,114 @@ public class ChatApp {
     private JComponent messagesArea() {
         messagesPanel = new JPanel();
         messagesPanel.setLayout(new BoxLayout(messagesPanel, BoxLayout.Y_AXIS));
+        messagesPanel.setBackground(BG_CHAT);
 
         messagesScroll = new JScrollPane(messagesPanel);
+        messagesScroll.setBorder(null);
+        messagesScroll.getViewport().setBackground(BG_CHAT);
         messagesScroll.getVerticalScrollBar().setUnitIncrement(16);
+        messagesScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         return messagesScroll;
     }
 
-    private JComponent messageBubble(String author, String text) {
-        JPanel bubble = new JPanel();
-        bubble.setLayout(new BoxLayout(bubble, BoxLayout.Y_AXIS));
-        bubble.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+    private static class RoundedPanel extends JPanel {
+        private final int radius;
 
-        JLabel authorLabel = new JLabel(author);
-        authorLabel.setFont(authorLabel.getFont().deriveFont(Font.BOLD));
+        RoundedPanel(int radius) {
+            this.radius = radius;
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(getBackground());
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radius, radius);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private JComponent messageBubble(String author, String text, boolean isPrivate) {
+        boolean fromMe = nick.equals(author);
+        JPanel outer = new JPanel(new BorderLayout());
+        outer.setOpaque(false);
+        outer.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+
+        RoundedPanel bubble = new RoundedPanel(18);
+        bubble.setLayout(new BoxLayout(bubble, BoxLayout.Y_AXIS));
+        bubble.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        bubble.setBackground(fromMe ? BG_BUBBLE_ME : BG_BUBBLE_THEM);
+
+        JLabel authorLabel = new JLabel(fromMe ? "You" : author);
+        authorLabel.setFont(authorLabel.getFont().deriveFont(Font.BOLD, 12f));
+        authorLabel.setForeground(fromMe ? FG_ON_PRIMARY : FG_PRIMARY);
+
+        if (isPrivate) {
+            JLabel dmLabel = new JLabel(fromMe ? "Direct message" : "Direct message to you");
+            dmLabel.setFont(dmLabel.getFont().deriveFont(11f));
+            dmLabel.setForeground(fromMe ? FG_ON_PRIMARY : FG_MUTED);
+            bubble.add(dmLabel);
+        }
 
         JLabel textLabel = new JLabel("<html>" + text + "</html>");
+        textLabel.setFont(textLabel.getFont().deriveFont(13f));
+        textLabel.setForeground(fromMe ? FG_ON_PRIMARY : FG_PRIMARY);
 
         bubble.add(authorLabel);
         bubble.add(Box.createVerticalStrut(4));
         bubble.add(textLabel);
 
-        bubble.setOpaque(true);
+        if (fromMe) {
+            outer.add(bubble, BorderLayout.EAST);
+        } else {
+            outer.add(bubble, BorderLayout.WEST);
+        }
 
-        return bubble;
+        Dimension pref = outer.getPreferredSize();
+        outer.setMaximumSize(new Dimension(Integer.MAX_VALUE, pref.height));
+
+        return outer;
     }
 
     private JComponent inputArea() {
         JPanel inputPanel = new JPanel(new BorderLayout(8, 8));
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
+        inputPanel.setOpaque(false);
+
+        JPanel inner = new JPanel(new BorderLayout(8, 8));
+        inner.setBackground(BG_INPUT);
+        inner.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 8));
 
         messageField = new JTextField();
+        messageField.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        messageField.setBackground(Color.WHITE);
         messageField.setToolTipText("Your message");
         messageField.addActionListener(e -> sendCurrentText());
 
         JButton sendButton = new JButton("Send");
+        sendButton.setFocusPainted(false);
 
         JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        rightButtons.setOpaque(false);
         rightButtons.add(sendButton);
         sendButton.addActionListener(e -> sendCurrentText());
 
-        inputPanel.add(messageField, BorderLayout.CENTER);
-        inputPanel.add(rightButtons, BorderLayout.EAST);
+        inner.add(messageField, BorderLayout.CENTER);
+        inner.add(rightButtons, BorderLayout.EAST);
 
+        inputPanel.add(inner, BorderLayout.CENTER);
         return inputPanel;
     }
 
     private void addMessage(String author, String text) {
-        messagesPanel.add(messageBubble(author, text));
+        addMessage(author, text, false);
+    }
+
+    private void addMessage(String author, String text, boolean isPrivate) {
+        messagesPanel.add(messageBubble(author, text, isPrivate));
         messagesPanel.add(Box.createVerticalStrut(8));
         messagesPanel.revalidate();
         messagesPanel.repaint();
@@ -257,11 +358,7 @@ public class ChatApp {
             if (sp > 0) {
                 String from = rest.substring(0, sp);
                 String msg = rest.substring(sp + 1);
-                if (nick.equals(from)) {
-                    addMessage("me", msg);
-                } else {
-                    addMessage(from, msg);
-                }
+                addMessage(from, msg, false);
             }
         } else if (line.startsWith(Protocol.PRIV_FROM)) {
             String rest = line.substring(Protocol.PRIV_FROM.length()); // "alice TO: bob <text>"
@@ -273,10 +370,15 @@ public class ChatApp {
                 if (sp2 > 0) {
                     String to = afterTo.substring(0, sp2).trim();
                     String msg = afterTo.substring(sp2 + 1);
-                    if (nick.equals(from)) {
-                        addMessage("[DM me -> " + to + "] ", msg);
-                    } else if (nick.equals(to)) {
-                        addMessage("[DM " + from + " -> me] ", msg);
+                    boolean fromMe = nick.equals(from);
+                    boolean toMe = nick.equals(to);
+
+                    if (fromMe && !toMe) {
+                        addMessage(from, "[DM to " + to + "] " + msg, true);
+                    } else if (toMe && !fromMe) {
+                        addMessage(from, "[DM to you] " + msg, true);
+                    } else {
+                        addMessage(from, "[DM " + from + " -> " + to + "] " + msg, true);
                     }
                 }
             }
