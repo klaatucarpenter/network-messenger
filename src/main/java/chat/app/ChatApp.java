@@ -1,13 +1,23 @@
 package chat.app;
 
+import chat.protocol.Protocol;
+
 import javax.swing.*;
 import java.awt.*;
+import java.io.*;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class ChatApp {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new ChatApp().show());
     }
+
+    private Socket socket;
+    private BufferedReader in;
+    private PrintWriter out;
+    private String nick;
 
     private JFrame frame;
     private DefaultListModel<String> usersModel;
@@ -33,6 +43,7 @@ public class ChatApp {
         frame.setSize(1200, 800);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+        SwingUtilities.invokeLater(this::connectAndLogin);
     }
 
     private JPanel conversationsPanel() {
@@ -151,5 +162,77 @@ public class ChatApp {
         if (text.isEmpty()) return;
         appendSystemMessage("> " + text);
         messageField.setText("");
+    }
+
+    private void showErrorAndClose(String message) {
+        JOptionPane.showMessageDialog(frame, message, "Error", JOptionPane.ERROR_MESSAGE);
+        disconnect();
+        if (frame != null) frame.dispose();
+    }
+
+    private void connectAndLogin() {
+        String host = "127.0.0.1";
+        int port = 5000;
+
+        try {
+            socket = new Socket(host, port);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
+        } catch (IOException e) {
+            showErrorAndClose("Cannot connect to server at " + host + ":" + port + "\n" + e.getMessage());
+            return;
+        }
+
+        while (true) {
+            String proposed = JOptionPane.showInputDialog(frame, "Choose your nick (max " + Protocol.MAX_NICK_LENGTH + "):", "Login", JOptionPane.QUESTION_MESSAGE);
+            if (proposed == null) {
+                disconnect();
+                frame.dispose();
+                return;
+            }
+            proposed = proposed.trim();
+            out.println(Protocol.HANDSHAKE + proposed);
+            String resp;
+            try {
+                resp = in.readLine();
+            } catch (IOException e) {
+                showErrorAndClose("Connection lost during login: " + e.getMessage());
+                return;
+            }
+
+            if (resp == null) {
+                showErrorAndClose("Server closed the connection.");
+                return;
+            }
+
+            if (Protocol.WELCOME.equals(resp)) {
+                this.nick = proposed;
+                headerTitle.setText("Room");
+                headerSubtitle.setText("Logged in as " + nick);
+                appendSystemMessage("Connected as " + nick + ")");
+                break;
+            } else if (Protocol.ERR_NICK_TAKEN.equals(resp) || Protocol.ERR_INVALID_NICK.equals(resp)) {
+                JOptionPane.showMessageDialog(frame, resp, "Login failed", JOptionPane.WARNING_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(frame, "Unexpected response: " + resp, "Login failed", JOptionPane.WARNING_MESSAGE);
+            }
+        }
+    }
+
+    private void disconnect() {
+        try {
+            if (out != null) {
+                out.println(Protocol.QUIT);
+                out.flush();
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            if (socket != null) socket.close();
+        } catch (IOException ignored) {
+        }
+        out = null;
+        in = null;
+        socket = null;
     }
 }
