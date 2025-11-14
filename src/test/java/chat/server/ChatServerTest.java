@@ -117,7 +117,7 @@ public class ChatServerTest {
 
             outA.println(Protocol.PRIV + "bob hi bob");
             String lineB = readNonUsers(inB);
-            assertEquals(Protocol.PRIV_FROM + "alice hi bob", lineB);
+            assertEquals(Protocol.PRIV_FROM + "alice" + Protocol.PRIV_TO + "bob hi bob", lineB);
             assertThrows(java.net.SocketTimeoutException.class, () -> {
                 String unexpected = readNonUsers(inC);
                 System.out.println("Unexpected for C: " + unexpected);

@@ -43,7 +43,7 @@ public class InMemoryBackend implements Backend {
     public boolean sendPrivate(String fromNick, String toNick, String text) {
         Session dst = clients.get(toNick);
         if (dst == null || dst.out == null) return false;
-        String line = Protocol.PRIV_FROM + fromNick + " " + text;
+        String line = Protocol.PRIV_FROM + fromNick + Protocol.PRIV_TO + toNick + " " + text;
         dst.out.println(line);
 
         Session src = clients.get(fromNick);

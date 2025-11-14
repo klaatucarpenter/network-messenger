@@ -261,18 +261,27 @@ public class ChatApp {
             if (sp > 0) {
                 String from = rest.substring(0, sp);
                 String msg = rest.substring(sp + 1);
-                addMessage(from, msg);
+                if (nick.equals(from)) {
+                    addMessage("me", msg);
+                } else {
+                    addMessage(from, msg);
+                }
             }
         } else if (line.startsWith(Protocol.PRIV_FROM)) {
-            String rest = line.substring(Protocol.PRIV_FROM.length());
-            int sp = rest.indexOf(' ');
-            if (sp > 0) {
-                String from = rest.substring(0, sp);
-                String msg = rest.substring(sp + 1);
-                if (nick.equals(from)) {
-                    addMessage("[DM from me] ", msg);
-                } else {
-                    addMessage("[DM from " + from + "] ", msg);
+            String rest = line.substring(Protocol.PRIV_FROM.length()); // "alice TO: bob <text>"
+            int toIdx = rest.indexOf(Protocol.PRIV_TO);
+            if (toIdx > 0) {
+                String from = rest.substring(0, toIdx).trim();
+                String afterTo = rest.substring(toIdx + Protocol.PRIV_TO.length()); // "bob <text>"
+                int sp2 = afterTo.indexOf(' ');
+                if (sp2 > 0) {
+                    String to = afterTo.substring(0, sp2).trim();
+                    String msg = afterTo.substring(sp2 + 1);
+                    if (nick.equals(from)) {
+                        addMessage("[DM me -> " + to + "] ", msg);
+                    } else if (nick.equals(to)) {
+                        addMessage("[DM " + from + " -> me] ", msg);
+                    }
                 }
             }
         } else if (line.startsWith(Protocol.LIST_USERS)) {

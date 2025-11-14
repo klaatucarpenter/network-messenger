@@ -68,8 +68,8 @@ class InMemoryBackendTest {
 
         String outA = wa.toString();
         String outB = wb.toString();
-        assertTrue(outB.contains(Protocol.PRIV_FROM + "alice hi bob")); // delivered to bob
-        assertTrue(outA.contains(Protocol.PRIV_FROM + "alice hi bob")); // visible to sender too
+        assertTrue(outB.contains(Protocol.PRIV_FROM + "alice" + Protocol.PRIV_TO + "bob hi bob")); // delivered to bob
+        assertTrue(outA.contains(Protocol.PRIV_FROM + "alice" + Protocol.PRIV_TO + "bob hi bob")); // visible to sender too
     }
 
     @Test

@@ -13,6 +13,7 @@ public interface Protocol {
     String MSG = "MSG ";
     String PRIV = "PRIV ";
     String PRIV_FROM = "PRIV FROM: ";
+    String PRIV_TO = " TO: ";
     String LIST_USERS = "USERS";
     String QUIT = "QUIT";
     String WELCOME = "WELCOME";
