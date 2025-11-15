@@ -22,7 +22,10 @@ public class ChatServerTest {
         }
         server = new ChatServer(port);
         serverThread = server.startAsync();
-        server.awaitReady(2000);
+        if (!server.awaitReady(2000)) {
+            System.err.println("Server did not start within 5s.");
+            System.exit(1);
+        }
         return port;
     }
 

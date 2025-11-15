@@ -21,7 +21,7 @@ public class ChatServer {
         this.port = port;
     }
 
-    public Thread startAsync() throws IOException {
+    public Thread startAsync() {
         running = true;
         Thread t = new Thread(() -> {
             try (ServerSocket ss = new ServerSocket(port)) {
@@ -41,8 +41,8 @@ public class ChatServer {
         return t;
     }
 
-    public void awaitReady(long ms) throws InterruptedException {
-        ready.await(ms, TimeUnit.MILLISECONDS);
+    public boolean awaitReady(long ms) throws InterruptedException {
+        return ready.await(ms, TimeUnit.MILLISECONDS);
     }
 
     public void stop() {
@@ -86,7 +86,10 @@ public class ChatServer {
         int port = (args.length > 0) ? Integer.parseInt(args[0]) : 5000;
         ChatServer server = new ChatServer(port);
         Thread t = server.startAsync();
-        server.awaitReady(5000);
+        if (!server.awaitReady(5000)) {
+            System.err.println("Server did not start within 5s.");
+            System.exit(1);
+        }
         System.out.println("Server started on port " + port + ". Press Ctrl+C to stop.");
         Runtime.getRuntime().addShutdownHook(new Thread(server::stop, "shutdown"));
         t.join();
