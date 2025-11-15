@@ -155,7 +155,9 @@ public class ChatServerTest {
 
             String usersA2 = readUsers(inA);
             String usersB1 = readUsers(inB);
+            assertNotNull(usersA2);
             assertTrue(usersA2.startsWith(Protocol.LIST_USERS));
+            assertNotNull(usersB1);
             assertTrue(usersB1.startsWith(Protocol.LIST_USERS));
             assertTrue(usersA2.contains("alice"));
             assertTrue(usersA2.contains("bob"));
@@ -165,6 +167,7 @@ public class ChatServerTest {
             // Bob quits, Alice should receive updated USERS without bob
             outB.println(Protocol.QUIT);
             String usersA3 = readUsers(inA);
+            assertNotNull(usersA3);
             assertTrue(usersA3.contains("alice"));
             assertFalse(usersA3.contains("bob"));
         }
