@@ -7,6 +7,13 @@ import java.io.PrintWriter;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Simple in-memory {@link Backend} implementation backed by concurrent maps.
+ * <p>
+ * This backend stores the set of reserved nicknames and the latest {@link PrintWriter}
+ * associated with each connected client. It is intended for testing and local demos.
+ * </p>
+ */
 public class InMemoryBackend implements Backend {
     private static final class Session {
         volatile PrintWriter out;
@@ -14,22 +21,31 @@ public class InMemoryBackend implements Backend {
 
     private final Map<String, Session> clients = new ConcurrentHashMap<>();
 
+    /** {@inheritDoc} */
     @Override
     public boolean reserveNick(String nick) {
         return clients.putIfAbsent(nick, new Session()) == null;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void releaseNick(String nick) {
         clients.remove(nick);
         broadcastUsersList();
     }
 
+    /**
+     * Associates the given writer with the specified nickname so future messages can be delivered.
+     *
+     * @param nick the nickname for which to attach the writer
+     * @param out a live {@link PrintWriter} connected to the client's socket
+     */
     public void attachWriter(String nick, PrintWriter out) {
         Session s = clients.get(nick);
         if (s != null) s.out = out;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void broadcast(String fromNick, String text) {
         String line = Protocol.FROM + fromNick + " " + text;
@@ -39,6 +55,7 @@ public class InMemoryBackend implements Backend {
         });
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean sendPrivate(String fromNick, String toNick, String text) {
         Session dst = clients.get(toNick);
@@ -51,11 +68,13 @@ public class InMemoryBackend implements Backend {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String usersCsv() {
         return String.join(",", clients.keySet());
     }
 
+    /** {@inheritDoc} */
     @Override
     public void broadcastUsersList() {
         String line = Protocol.LIST_USERS + usersCsv();

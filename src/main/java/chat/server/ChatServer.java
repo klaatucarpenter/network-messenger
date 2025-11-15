@@ -10,6 +10,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Minimal multi-client TCP chat server.
+ * <p>
+ * The server accepts plain-text connections, delegates per-connection protocol parsing
+ * to {@link ClientSession}, and uses an in-memory backend for message routing.
+ * Each client is handled on a dedicated thread. This implementation is intended for
+ * demos and tests and is not optimized for production use.
+ * </p>
+ */
 public class ChatServer {
     private final int port;
     private final InMemoryBackend backend = new InMemoryBackend();
@@ -17,10 +26,20 @@ public class ChatServer {
     private ServerSocket serverSocket;
     private final CountDownLatch ready = new CountDownLatch(1);
 
+    /**
+     * Creates a server that will listen on the given TCP port.
+     *
+     * @param port TCP port to bind to
+     */
     public ChatServer(int port) {
         this.port = port;
     }
 
+    /**
+     * Starts the server on a background daemon thread.
+     *
+     * @return the thread that runs the accept loop
+     */
     public Thread startAsync() {
         running = true;
         Thread t = new Thread(() -> {
@@ -41,10 +60,21 @@ public class ChatServer {
         return t;
     }
 
+    /**
+     * Waits until the server has successfully bound the port.
+     *
+     * @param ms maximum time to wait in milliseconds
+     * @return true if the server became ready within the given time, false otherwise
+     * @throws InterruptedException if the current thread is interrupted while waiting
+     */
     public boolean awaitReady(long ms) throws InterruptedException {
         return ready.await(ms, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * Requests the server to stop and closes the server socket if open.
+     * The accept loop thread will exit shortly after.
+     */
     public void stop() {
         running = false;
         try {
@@ -53,6 +83,9 @@ public class ChatServer {
         }
     }
 
+    /**
+     * Handles a single connected client until the socket is closed.
+     */
     private void handle(Socket socket) {
         try (socket;
              BufferedReader in = new BufferedReader(
@@ -82,6 +115,12 @@ public class ChatServer {
         }
     }
 
+    /**
+     * Starts the server from the command line.
+     *
+     * @param args first argument may specify the port (default 5000)
+     * @throws Exception if the server thread is interrupted
+     */
     public static void main(String[] args) throws Exception {
         int port = (args.length > 0) ? Integer.parseInt(args[0]) : 5000;
         ChatServer server = new ChatServer(port);

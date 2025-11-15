@@ -8,8 +8,21 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 
+/**
+ * Swing-based reference UI for the simple chat application.
+ * <p>
+ * This class builds a minimal messenger-like UI and delegates all networking and protocol
+ * handling to {@link ChatClient}. It implements {@link ChatView} to receive events from
+ * the client. All UI updates occur on the Swing Event Dispatch Thread.
+ * </p>
+ */
 public class ChatApp implements ChatView {
 
+    /**
+     * Launches the Swing chat application.
+     *
+     * @param args ignored; no arguments are required
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new ChatApp().show());
     }

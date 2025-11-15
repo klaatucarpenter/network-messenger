@@ -13,7 +13,11 @@ import java.util.Objects;
 
 /**
  * Chat client logic: networking, protocol parsing, and callbacks to {@link ChatView}.
+ * <p>
  * This class contains no UI state and can be reused by different frontends.
+ * Network I/O happens on a background thread; all {@link ChatView} callbacks are
+ * dispatched onto the Swing Event Dispatch Thread via {@link SwingUtilities#invokeLater(Runnable)}.
+ * </p>
  */
 public class ChatClient {
     private final ChatView view;
@@ -25,14 +29,31 @@ public class ChatClient {
 
     private volatile String nick;
 
+    /**
+     * Creates a new client bound to a {@link ChatView} implementation.
+     *
+     * @param view callback sink for UI/frontends; must not be {@code null}
+     */
     public ChatClient(ChatView view) {
         this.view = Objects.requireNonNull(view, "view");
     }
 
+    /**
+     * Returns whether the underlying socket is connected and open.
+     *
+     * @return {@code true} if connected, otherwise {@code false}
+     */
     public boolean isConnected() {
         return socket != null && socket.isConnected() && !socket.isClosed();
     }
 
+    /**
+     * Connects to the server but does not log in.
+     *
+     * @param host server hostname or IP
+     * @param port server TCP port
+     * @throws IOException if the socket cannot be opened
+     */
     public void connect(String host, int port) throws IOException {
         if (isConnected()) return;
         socket = new Socket(host, port);
@@ -41,7 +62,10 @@ public class ChatClient {
     }
 
     /**
-     * Attempts to log in with the given nick. Returns null on success or an error message on failure.
+     * Attempts to log in with the given nickname.
+     *
+     * @param nick nickname to reserve; leading/trailing spaces are trimmed
+     * @return {@code null} on success, or a human-readable error message to display
      */
     public String login(String nick) {
         if (out == null || in == null) return "Not connected";
@@ -63,6 +87,11 @@ public class ChatClient {
         return resp;
     }
 
+    /**
+     * Sends a public message to all connected users.
+     *
+     * @param text message text; blank values are ignored
+     */
     public void sendPublic(String text) {
         if (!isConnected() || out == null) {
             SwingUtilities.invokeLater(() -> view.onSystemMessage("Not connected"));
@@ -74,6 +103,12 @@ public class ChatClient {
         out.println(Protocol.MSG + text);
     }
 
+    /**
+     * Sends a direct message to a single recipient.
+     *
+     * @param to recipient nickname; must not be blank
+     * @param text message text; blank values are ignored
+     */
     public void sendPrivate(String to, String text) {
         if (!isConnected() || out == null) {
             SwingUtilities.invokeLater(() -> view.onSystemMessage("Not connected"));
@@ -87,6 +122,10 @@ public class ChatClient {
         out.println(Protocol.PRIV + to + " " + text);
     }
 
+    /**
+     * Sends a quit command and closes the connection if open.
+     * Always triggers {@link ChatView#onDisconnected()} on the EDT.
+     */
     public void disconnect() {
         try {
             if (out != null) {
@@ -106,6 +145,10 @@ public class ChatClient {
         SwingUtilities.invokeLater(view::onDisconnected);
     }
 
+    /**
+     * Starts a background listener thread that reads server lines and dispatches
+     * callbacks to the {@link ChatView} on the EDT.
+     */
     private void startListener() {
         listenerThread = new Thread(() -> {
             try {
@@ -123,6 +166,9 @@ public class ChatClient {
         listenerThread.start();
     }
 
+    /**
+     * Parses a single server line and forwards it to the appropriate view callback.
+     */
     private void handleIncoming(String line) {
         if (line.startsWith(Protocol.FROM)) {
             String rest = line.substring(Protocol.FROM.length());

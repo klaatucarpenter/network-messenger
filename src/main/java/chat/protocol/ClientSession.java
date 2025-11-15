@@ -1,13 +1,34 @@
 package chat.protocol;
 
+/**
+ * Stateful protocol handler for a single client connection.
+ * <p>
+ * Instances of this class are not thread-safe and are expected to be used from a single
+ * connection-handling thread. The session tracks the authenticated nickname after a successful
+ * {@link Protocol#HANDSHAKE} and routes subsequent commands to the provided {@link Backend}.
+ * </p>
+ */
 public class ClientSession {
     private final Backend backend;
     private String nick;
 
+    /**
+     * Creates a new session bound to a backend implementation.
+     *
+     * @param backend the backend responsible for nickname reservation and message delivery
+     */
     public ClientSession(Backend backend) {
         this.backend = backend;
     }
 
+    /**
+     * Processes a single incoming line according to the {@link Protocol}.
+     *
+     * @param line a non-null UTF-8 line received from the client (without line breaks)
+     * @return a response to send back to the client or {@code null} if no immediate
+     * response is required (e.g., for broadcasted messages). Never throws; unknown input
+     * results in {@link Protocol#ERROR_UNKNOWN}.
+     */
     public String process(String line) {
         if (line == null) return null;
 
@@ -60,6 +81,11 @@ public class ClientSession {
         return Protocol.ERROR_UNKNOWN;
     }
 
+    /**
+     * Returns the currently authenticated nickname for this session.
+     *
+     * @return the nickname, or {@code null} if the user has not logged in or has quit
+     */
     public String nick() {
         return nick;
     }
