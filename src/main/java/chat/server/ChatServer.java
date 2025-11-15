@@ -67,8 +67,8 @@ public class ChatServer {
      * @return true if the server became ready within the given time, false otherwise
      * @throws InterruptedException if the current thread is interrupted while waiting
      */
-    public boolean awaitReady(long ms) throws InterruptedException {
-        return ready.await(ms, TimeUnit.MILLISECONDS);
+    public boolean isReady(long ms) throws InterruptedException {
+        return !ready.await(ms, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -125,7 +125,7 @@ public class ChatServer {
         int port = (args.length > 0) ? Integer.parseInt(args[0]) : 5000;
         ChatServer server = new ChatServer(port);
         Thread t = server.startAsync();
-        if (!server.awaitReady(5000)) {
+        if (server.isReady(5000)) {
             System.err.println("Server did not start within 5s.");
             System.exit(1);
         }
