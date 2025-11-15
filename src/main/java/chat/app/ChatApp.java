@@ -40,6 +40,7 @@ public class ChatApp {
     private static final Color FG_PRIMARY = new Color(17, 24, 39);
     private static final Color FG_MUTED = new Color(148, 163, 184);
     private static final Color FG_ON_PRIMARY = Color.WHITE;
+    private static final float BUBBLE_MAX_PARENT_WIDTH = 0.7f;
 
     private void show() {
         frame = new JFrame("Simple Chat");
@@ -171,6 +172,24 @@ public class ChatApp {
         }
     }
 
+    private JLabel createWrappingLabel(String text, boolean fromMe) {
+        JLabel label = new JLabel("<html>" + text + "</html>");
+        label.setFont(label.getFont().deriveFont(13f));
+        label.setForeground(fromMe ? FG_ON_PRIMARY : FG_PRIMARY);
+
+        Dimension natural = label.getPreferredSize();
+        int parentWidth = messagesScroll.getViewport().getWidth();
+
+        int maxWidth = (int) (parentWidth * BUBBLE_MAX_PARENT_WIDTH);
+
+        if (natural.width > maxWidth) {
+            String html = "<html><body style='width:" + maxWidth + "px'>" + text + "</body></html>";
+            label.setText(html);
+        }
+
+        return label;
+    }
+
     private JComponent messageBubble(String author, String text, boolean isPrivate) {
         boolean fromMe = nick.equals(author);
         JPanel outer = new JPanel(new BorderLayout());
@@ -193,9 +212,7 @@ public class ChatApp {
             bubble.add(dmLabel);
         }
 
-        JLabel textLabel = new JLabel("<html>" + text + "</html>");
-        textLabel.setFont(textLabel.getFont().deriveFont(13f));
-        textLabel.setForeground(fromMe ? FG_ON_PRIMARY : FG_PRIMARY);
+        JLabel textLabel = createWrappingLabel(text, fromMe);
 
         bubble.add(authorLabel);
         bubble.add(Box.createVerticalStrut(4));
