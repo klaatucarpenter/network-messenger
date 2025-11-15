@@ -7,19 +7,14 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 
-public class ChatApp {
+public class ChatApp implements ChatView {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new ChatApp().show());
     }
 
-    private Thread listenerThread;
-    private Socket socket;
-    private BufferedReader in;
-    private PrintWriter out;
+    private ChatClient client;
     private String nick;
 
     private JFrame frame;
@@ -59,7 +54,7 @@ public class ChatApp {
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                disconnect();
+                if (client != null) client.disconnect();
             }
         });
 
@@ -260,10 +255,6 @@ public class ChatApp {
         return inputPanel;
     }
 
-    private void addMessage(String author, String text) {
-        addMessage(author, text, false);
-    }
-
     private void addMessage(String author, String text, boolean isPrivate) {
         messagesPanel.add(messageBubble(author, text, isPrivate));
         messagesPanel.add(Box.createVerticalStrut(8));
@@ -276,7 +267,7 @@ public class ChatApp {
     }
 
     private void appendSystemMessage(String text) {
-        addMessage("System", text);
+        addMessage("System", text, false);
     }
 
     private void sendCurrentText() {
@@ -284,10 +275,6 @@ public class ChatApp {
         if (text == null) return;
         text = text.trim();
         if (text.isEmpty()) return;
-        if (out == null) {
-            appendSystemMessage("Not connected");
-            return;
-        }
         if (text.toLowerCase().startsWith("dm ")) {
             String rest = text.substring("dm ".length()).trim();
             int sp = rest.indexOf(' ');
@@ -296,17 +283,17 @@ public class ChatApp {
             } else {
                 String to = rest.substring(0, sp);
                 String msg = rest.substring(sp + 1);
-                out.println(Protocol.PRIV + to + " " + msg);
+                if (client != null) client.sendPrivate(to, msg);
             }
         } else {
-            out.println(Protocol.MSG + text);
+            if (client != null) client.sendPublic(text);
         }
         messageField.setText("");
     }
 
     private void showErrorAndClose(String message) {
         JOptionPane.showMessageDialog(frame, message, "Error", JOptionPane.ERROR_MESSAGE);
-        disconnect();
+        if (client != null) client.disconnect();
         if (frame != null) frame.dispose();
     }
 
@@ -315,9 +302,8 @@ public class ChatApp {
         int port = 5000;
 
         try {
-            socket = new Socket(host, port);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-            out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
+            client = new ChatClient(this);
+            client.connect(host, port);
         } catch (IOException e) {
             showErrorAndClose("Cannot connect to server at " + host + ":" + port + "\n" + e.getMessage());
             return;
@@ -326,115 +312,64 @@ public class ChatApp {
         while (true) {
             String proposed = JOptionPane.showInputDialog(frame, "Choose your nick (max " + Protocol.MAX_NICK_LENGTH + "):", "Login", JOptionPane.QUESTION_MESSAGE);
             if (proposed == null) {
-                disconnect();
+                if (client != null) client.disconnect();
                 frame.dispose();
                 return;
             }
             proposed = proposed.trim();
-            out.println(Protocol.HANDSHAKE + proposed);
-            String resp;
-            try {
-                resp = in.readLine();
-            } catch (IOException e) {
-                showErrorAndClose("Connection lost during login: " + e.getMessage());
-                return;
-            }
-
-            if (resp == null) {
-                showErrorAndClose("Server closed the connection.");
-                return;
-            }
-
-            if (Protocol.WELCOME.equals(resp)) {
+            String error = client.login(proposed);
+            if (error == null) {
                 this.nick = proposed;
-                headerTitle.setText("Room");
-                headerSubtitle.setText("Logged in as " + nick);
-                appendSystemMessage("Connected as " + nick);
-                startListener();
                 break;
-            } else if (Protocol.ERR_NICK_TAKEN.equals(resp) || Protocol.ERR_INVALID_NICK.equals(resp)) {
-                JOptionPane.showMessageDialog(frame, resp, "Login failed", JOptionPane.WARNING_MESSAGE);
+            } else if (Protocol.ERR_NICK_TAKEN.equals(error) || Protocol.ERR_INVALID_NICK.equals(error)) {
+                JOptionPane.showMessageDialog(frame, error, "Login failed", JOptionPane.WARNING_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(frame, "Unexpected response: " + resp, "Login failed", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(frame, "Login failed: " + error, "Login failed", JOptionPane.WARNING_MESSAGE);
             }
         }
     }
 
-    private void startListener() {
-        listenerThread = new Thread(() -> {
-            try {
-                String line;
-                while ((line = in.readLine()) != null) {
-                    final String ln = line;
-                    SwingUtilities.invokeLater(() -> handleIncoming(ln));
-                }
-            } catch (IOException ignored) {
-            } finally {
-                SwingUtilities.invokeLater(() -> appendSystemMessage("Disconnected."));
-            }
-        }, "chat/listener");
-        listenerThread.setDaemon(true);
-        listenerThread.start();
+    @Override
+    public void onConnected(String nick) {
+        headerTitle.setText("Room");
+        headerSubtitle.setText("Logged in as " + nick);
+        appendSystemMessage("Connected as " + nick);
     }
 
-    private void handleIncoming(String line) {
-        if (line.startsWith(Protocol.FROM)) {
-            String rest = line.substring(Protocol.FROM.length());
-            int sp = rest.indexOf(' ');
-            if (sp > 0) {
-                String from = rest.substring(0, sp);
-                String msg = rest.substring(sp + 1);
-                addMessage(from, msg, false);
-            }
-        } else if (line.startsWith(Protocol.PRIV_FROM)) {
-            String rest = line.substring(Protocol.PRIV_FROM.length()); // "alice TO: bob <text>"
-            int toIdx = rest.indexOf(Protocol.PRIV_TO);
-            if (toIdx > 0) {
-                String from = rest.substring(0, toIdx).trim();
-                String afterTo = rest.substring(toIdx + Protocol.PRIV_TO.length()); // "bob <text>"
-                int sp2 = afterTo.indexOf(' ');
-                if (sp2 > 0) {
-                    String to = afterTo.substring(0, sp2).trim();
-                    String msg = afterTo.substring(sp2 + 1);
-                    boolean fromMe = nick.equals(from);
-                    boolean toMe = nick.equals(to);
+    @Override
+    public void onPublicMessage(String from, String text) {
+        addMessage(from, text, false);
+    }
 
-                    if (fromMe && !toMe) {
-                        addMessage(from, "[to " + to + "] " + msg, true);
-                    } else {
-                        addMessage(from, msg, true);
-                    }
-                }
-            }
-        } else if (line.startsWith(Protocol.LIST_USERS)) {
-            String csv = line.substring(Protocol.LIST_USERS.length());
-            usersModel.clear();
-            if (!csv.isEmpty()) {
-                for (String u : csv.split(",")) {
-                    if (!u.isBlank()) usersModel.addElement(u.trim());
-                }
-            }
-        } else if (line.startsWith("ERROR")) {
-            appendSystemMessage(line);
+    @Override
+    public void onPrivateMessage(String from, String to, String text) {
+        boolean fromMe = nick != null && nick.equals(from);
+        boolean toMe = nick != null && nick.equals(to);
+        if (fromMe && !toMe) {
+            addMessage(from, "[to " + to + "] " + text, true);
         } else {
-            appendSystemMessage("? " + line);
+            addMessage(from, text, true);
         }
     }
 
-    private void disconnect() {
-        try {
-            if (out != null) {
-                out.println(Protocol.QUIT);
-                out.flush();
-            }
-        } catch (Exception ignored) {
-        }
-        try {
-            if (socket != null) socket.close();
-        } catch (IOException ignored) {
-        }
-        out = null;
-        in = null;
-        socket = null;
+    @Override
+    public void onUsers(java.util.List<String> users) {
+        usersModel.clear();
+        for (String u : users) usersModel.addElement(u);
+    }
+
+    @Override
+    public void onSystemMessage(String text) {
+        appendSystemMessage(text);
+    }
+
+    @Override
+    public void onError(String error) {
+        appendSystemMessage(error);
+    }
+
+    @Override
+    public void onDisconnected() {
+        appendSystemMessage("Disconnected.");
     }
 }
