@@ -401,6 +401,8 @@ public class ChatApp {
 
                     if (fromMe && !toMe) {
                         addMessage(from, "[to " + to + "] " + msg, true);
+                    } else {
+                        addMessage(from, msg, true);
                     }
                 }
             }
