@@ -45,3 +45,35 @@ Alternatively, from your IDE:
 Quick sanity checks
 - Confirm it’s listening: `nc -zv localhost 5000`
 - If you ever need to free the port manually: `lsof -nP -iTCP:5000 | grep LISTEN` then `kill -TERM <PID>`
+
+## Tests
+
+This project uses JUnit 5 (Jupiter) and Mockito. Tests are executed via the Gradle wrapper.
+
+- Run all tests:
+```bash
+./gradlew test
+```
+
+- Run a single test class:
+```bash
+./gradlew test --tests "chat.server.ChatServerTest"
+```
+
+- Run one test method:
+```bash
+./gradlew test --tests "chat.server.ChatServerTest.usersListBroadcastsOnLoginAndLogout"
+```
+
+- Run tests matching a pattern (e.g., a package):
+```bash
+./gradlew test --tests "chat.server.*"
+```
+
+Where to find results:
+- HTML report: `build/reports/tests/test/index.html`
+- XML results: `build/test-results/test/`
+
+Notes:
+- The server tests bind to an ephemeral free port at runtime; no manual setup is required.
+- Ensure no strict firewall rules block localhost TCP connections if tests are run in a restricted environment.
