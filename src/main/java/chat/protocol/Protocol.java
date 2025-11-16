@@ -7,7 +7,6 @@ package chat.protocol;
  * commands defined by the constants in this interface. Implementations should treat
  * values as case-sensitive.
  * </p>
- * <p>
  * Typical flow:
  * <ol>
  *   <li>Client connects and sends {@link #HANDSHAKE} + nick.</li>
@@ -17,7 +16,6 @@ package chat.protocol;
  *   <li>Users list can be requested via {@link #LIST_USERS}.</li>
  *   <li>Either side closes session by sending {@link #QUIT} or closing the socket.</li>
  * </ol>
- * </p>
  */
 public interface Protocol {
     /** Error: provided nickname is invalid (empty, contains spaces, or exceeds {@link #MAX_NICK_LENGTH}). */
