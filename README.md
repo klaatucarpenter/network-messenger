@@ -46,6 +46,27 @@ Quick sanity checks
 - Confirm it’s listening: `nc -zv localhost 5000`
 - If you ever need to free the port manually: `lsof -nP -iTCP:5000 | grep LISTEN` then `kill -TERM <PID>`
 
+## Using the GUI client (Swing)
+
+What you’ll see and how to use it:
+- Login prompt
+    - When the client starts it immediately connects to `127.0.0.1:5000` and asks for a nickname.
+    - Pick any nickname up to the limit shown. If the nick is taken or invalid, you’ll be asked again.
+- Users list (left sidebar)
+    - Shows everyone currently online. This is informational; sending a private message is done via the input field (see below).
+- Sending public messages (room chat)
+    - Type your message in the input box at the bottom and press Enter. Everyone will see it.
+- Sending private/DM messages
+    - Use the command: `DM <nick> <message>`
+    - Example: `DM alice hi there!`
+    - Your own DMs are shown with a small “[to <nick>] …” hint.
+- Status/system messages
+    - The chat area displays system events like connection, errors, and disconnects.
+- Disconnecting
+    - Closing the window logs you out and closes the connection.
+
+![Chat GUI screenshot](docs/images/chat-gui.png)
+
 ## Tests
 
 This project uses JUnit 5 (Jupiter) and Mockito. Tests are executed via the Gradle wrapper.
